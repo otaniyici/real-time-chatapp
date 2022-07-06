@@ -4,12 +4,30 @@ const http = require("http");
 const morgan = require("morgan");
 const socketio = require("socket.io");
 const formatMessage = require("./utils/messages");
+require("dotenv").config();
+const mongoose = require("mongoose");
+
 const {
   userJoin,
   getCurrentUser,
   userLeave,
   getRoomUsers,
 } = require("./utils/users");
+
+//Make DB connection
+const DB_URL = process.env.DB_URL.replace(
+  "<password>",
+  process.env.DB_PASSWORD
+);
+
+mongoose
+  .connect(DB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("DB connection successful!");
+  });
 
 const app = express();
 const server = http.createServer(app);
