@@ -3,9 +3,12 @@ const express = require("express");
 const http = require("http");
 const morgan = require("morgan");
 const socketio = require("socket.io");
-const formatMessage = require("./utils/messages");
 require("dotenv").config();
 const mongoose = require("mongoose");
+
+// impot utils
+const formatMessage = require("./utils/messages");
+const userUtil = require("./utils/userUtil");
 
 const {
   userJoin,
@@ -42,8 +45,8 @@ const botName = "Chatcord Bot";
 
 // Run when client connect
 io.on("connection", (socket) => {
-  socket.on("joinRoom", ({ username, room }) => {
-    const user = userJoin(socket.id, username, room);
+  socket.on("joinRoom", async ({ username, room }) => {
+    const user = await userUtil.userJoin(username, room);
 
     socket.join(user.room);
 
@@ -61,7 +64,7 @@ io.on("connection", (socket) => {
     //Sends users and room info
     io.to(user.room).emit("roomUsers", {
       room: user.room,
-      users: getRoomUsers(user.room),
+      users: await userUtil.getRoomUsers(user.room),
     });
   });
 
