@@ -2,12 +2,15 @@ const User = require("../models/userModel");
 
 exports.userJoin = async (username, room) => {
   let user = await User.findOne({ username });
+
   if (!user) {
     user = await User.create({
       username: username,
       room: room,
-      active: true,
     });
+  } else {
+    user.active = true;
+    user.save();
   }
 
   return user;

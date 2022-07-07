@@ -6,16 +6,11 @@ const socketio = require("socket.io");
 require("dotenv").config();
 const mongoose = require("mongoose");
 
-// impot utils
-const formatMessage = require("./utils/messages");
-const userUtil = require("./utils/userUtil");
+const User = require("./models/userModel");
 
-const {
-  userJoin,
-  getCurrentUser,
-  userLeave,
-  getRoomUsers,
-} = require("./utils/users");
+// impot utils
+const userUtil = require("./utils/userUtil");
+const messageUtil = require("./utils/messageUtil");
 
 //Make DB connection
 const DB_URL = process.env.DB_URL.replace(
@@ -49,16 +44,23 @@ io.on("connection", (socket) => {
     const user = await userUtil.userJoin(username, room);
 
     socket.join(user.room);
+    socket.username = username;
 
     // Welcome current user
-    socket.emit("message", formatMessage(botName, "Welcome to ChatCord!"));
+    socket.emit(
+      "message",
+      await messageUtil.formatMessage(botName, "Welcome to ChatCord!")
+    );
 
     // Broadcast when a user connects
     socket.broadcast
       .to(user.room)
       .emit(
         "message",
-        formatMessage(botName, `${user.username} has joined the chat`)
+        await messageUtil.formatMessage(
+          botName,
+          `${user.username} has joined the chat`
+        )
       );
 
     //Sends users and room info
@@ -69,25 +71,32 @@ io.on("connection", (socket) => {
   });
 
   // Listen for chatMessage
-  socket.on("chatMessage", (msg) => {
-    const user = getCurrentUser(socket.id);
+  socket.on("chatMessage", async (msg, { username, room }) => {
+    const user = await User.findOne({ username });
 
-    io.to(user.room).emit("message", formatMessage(user.username, msg));
+    io.to(user.room).emit(
+      "message",
+      await messageUtil.formatMessage(user.username, msg)
+    );
   });
 
   // Runs when client disconnects
-  socket.on("disconnect", () => {
-    const user = userLeave(socket.id);
-
+  socket.on("disconnect", async () => {
+    const user = await User.findOne({ username: socket.username });
+    user.active = false;
+    await user.save();
     if (user) {
       io.to(user.room).emit(
         "message",
-        formatMessage(botName, `${user.username} has left the chat`)
+        await messageUtil.formatMessage(
+          botName,
+          `${user.username} has left the chat`
+        )
       );
       //Sends users and room info
       io.to(user.room).emit("roomUsers", {
         room: user.room,
-        users: getRoomUsers(user.room),
+        users: await userUtil.getRoomUsers(user.room),
       });
     }
   });
