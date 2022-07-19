@@ -60,7 +60,8 @@ io.on("connection", (socket) => {
         await messageUtil.formatMessage(
           botName,
           `${user.username} has joined the chat`
-        )
+        ),
+        await userUtil.getRoomUsers(user.room)
       );
 
     //Sends users and room info

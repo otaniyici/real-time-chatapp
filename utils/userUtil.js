@@ -10,6 +10,7 @@ exports.userJoin = async (username, room) => {
     });
   } else {
     user.active = true;
+    user.room = room;
     user.save();
   }
 
